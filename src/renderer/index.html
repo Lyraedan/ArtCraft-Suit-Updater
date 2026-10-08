@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' https://getartcraft.com https://avatars.githubusercontent.com data:; style-src 'self' 'unsafe-inline'; script-src 'self'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ArtCraft Suite Updater</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <aside id="sidebar">
+        <header class="side-head">
+          <div class="brand">
+            <span class="brand-mark"></span>
+            <span class="brand-text">ArtCraft<small>Suite Updater</small></span>
+          </div>
+          <button id="check-all" class="btn primary block" type="button">Check for updates</button>
+          <div id="checked-label" class="muted"></div>
+        </header>
+        <ul id="app-list" class="app-list"></ul>
+        <footer class="side-foot muted">All 12 Crafting Apps · GitHub Releases</footer>
+      </aside>
+      <main id="detail">
+        <div class="empty">Loading…</div>
+      </main>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
+</html>
