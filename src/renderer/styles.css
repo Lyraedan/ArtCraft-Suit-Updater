@@ -60,6 +60,14 @@ body {
   border-radius: 8px;
   background: linear-gradient(135deg, var(--accent), #a06cff);
   box-shadow: 0 0 18px rgba(108, 140, 255, 0.45);
+  overflow: hidden;
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .brand-text {
@@ -266,6 +274,107 @@ body {
   color: var(--muted);
   margin: 0 0 12px;
   font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+/* Changelog */
+.notes {
+  margin-top: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  max-height: 360px;
+  overflow-y: auto;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.notes h1,
+.notes h2,
+.notes h3,
+.notes h4 {
+  font-size: 15px;
+  margin: 16px 0 8px;
+}
+
+.notes h1:first-child,
+.notes h2:first-child,
+.notes h3:first-child {
+  margin-top: 0;
+}
+
+.notes p {
+  margin: 8px 0;
+}
+
+.notes ul,
+.notes ol {
+  margin: 8px 0;
+  padding-left: 22px;
+}
+
+.notes li {
+  margin: 3px 0;
+}
+
+.notes a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.notes a:hover {
+  text-decoration: underline;
+}
+
+.notes code {
+  background: #0a0c10;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.notes pre {
+  background: #0a0c10;
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.notes pre code {
+  background: none;
+  padding: 0;
+}
+
+.notes blockquote {
+  border-left: 3px solid var(--line);
+  margin: 8px 0;
+  padding-left: 12px;
+  color: var(--muted);
+}
+
+.notes hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 14px 0;
+}
+
+.notes table {
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+.notes th,
+.notes td {
+  border: 1px solid var(--line);
+  padding: 4px 8px;
 }
 
 .platform-row {

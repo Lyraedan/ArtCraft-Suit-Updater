@@ -34,6 +34,7 @@ export default [
       globals: {
         window: 'readonly',
         document: 'readonly',
+        DOMParser: 'readonly',
         console: 'readonly',
         fetch: 'readonly',
         setTimeout: 'readonly',

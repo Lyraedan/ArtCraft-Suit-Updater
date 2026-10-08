@@ -12,6 +12,9 @@
     busy: {},
     progress: {},
     errors: {},
+    notes: {},
+    notesOpen: {},
+    notesLoading: {},
     checkedAt: null,
     globalError: null
   };
@@ -216,6 +219,8 @@
     }
 
     if (result && !result.error) {
+      children.push(renderChangelog(app, result));
+      if (result.installedVersion) children.push(renderInstalledActions(app, result));
       children.push(renderDownloads(app, result));
     }
 
@@ -227,6 +232,197 @@
     }
 
     detailPane.replaceChildren(...children);
+  }
+
+  function renderInstalledActions(app, result) {
+    const canOpen = Boolean(result.canOpen);
+    const busy = Boolean(state.busy[app.id]);
+
+    const openButton = h('button', {
+      class: 'btn primary',
+      type: 'button',
+      text: 'Open',
+      disabled: busy || !canOpen,
+      title: canOpen ? '' : 'Open is available for portable installs',
+      onclick: () => openApp(app)
+    });
+
+    const reinstallButton = h('button', {
+      class: 'btn',
+      type: 'button',
+      text: 'Reinstall',
+      disabled: busy,
+      onclick: () => reinstall(app, result)
+    });
+
+    const revealButton = h('button', {
+      class: 'btn ghost',
+      type: 'button',
+      text: 'Show in folder',
+      disabled: !canOpen,
+      onclick: () => revealApp(app)
+    });
+
+    const summary = result.managedByInstaller
+      ? `Installer handed off · v${result.installedVersion}`
+      : `Installed v${result.installedVersion}${result.installedFormat ? ` · ${result.installedFormat}` : ''}`;
+
+    return h('div', { class: 'section' }, [
+      h('h2', { text: 'Installed' }),
+      h('div', { class: 'actions' }, [openButton, reinstallButton, revealButton]),
+      h('div', { class: 'notice', text: summary })
+    ]);
+  }
+
+  async function openApp(app) {
+    state.errors[app.id] = '';
+    try {
+      await window.api.openApp(app.id);
+    } catch (err) {
+      state.errors[app.id] = err && err.message ? err.message : String(err);
+    }
+    renderDetail();
+  }
+
+  function reinstall(app, result) {
+    const assets = result.assets || [];
+    const match =
+      (result.installedAssetName && assets.find((asset) => asset.name === result.installedAssetName)) ||
+      (result.installedFormat && assets.find((asset) => asset.ext === result.installedFormat)) ||
+      assets[0];
+    if (!match) {
+      state.errors[app.id] = 'No matching download is available to reinstall.';
+      renderDetail();
+      return;
+    }
+    startInstall(app, match);
+  }
+
+  async function revealApp(app) {
+    state.errors[app.id] = '';
+    try {
+      await window.api.revealApp(app.id);
+    } catch (err) {
+      state.errors[app.id] = err && err.message ? err.message : String(err);
+      renderDetail();
+    }
+  }
+
+  // --- changelog -----------------------------------------------------------
+
+  const ALLOWED_TAGS = new Set([
+    'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'BR', 'UL', 'OL', 'LI', 'STRONG', 'B',
+    'EM', 'I', 'CODE', 'PRE', 'BLOCKQUOTE', 'A', 'HR', 'DEL', 'DETAILS', 'SUMMARY',
+    'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD', 'SUP', 'SUB'
+  ]);
+
+  // Renders untrusted release-note HTML safely: unknown elements are unwrapped,
+  // all attributes are dropped except validated links and titles.
+  function sanitizeHtml(html) {
+    const doc = new DOMParser().parseFromString(html || '', 'text/html');
+    const clean = (node) => {
+      for (const child of Array.from(node.childNodes)) {
+        if (child.nodeType === 1) {
+          const tag = child.tagName;
+          if (!ALLOWED_TAGS.has(tag)) {
+            while (child.firstChild) node.insertBefore(child.firstChild, child);
+            node.removeChild(child);
+            continue;
+          }
+          for (const attr of Array.from(child.attributes)) {
+            const name = attr.name.toLowerCase();
+            if (tag === 'A' && name === 'href') {
+              if (!/^https?:/i.test(attr.value)) child.removeAttribute(attr.name);
+            } else if (name !== 'title') {
+              child.removeAttribute(attr.name);
+            }
+          }
+          if (tag === 'A') {
+            child.setAttribute('rel', 'noopener noreferrer');
+            child.setAttribute('target', '_blank');
+          }
+          clean(child);
+        } else if (child.nodeType !== 3) {
+          node.removeChild(child);
+        }
+      }
+    };
+    clean(doc.body);
+    return doc.body;
+  }
+
+  function renderChangelog(app, result) {
+    const open = Boolean(state.notesOpen[app.id]);
+    const toggle = h('button', {
+      class: 'btn',
+      type: 'button',
+      text: open ? 'Hide changelog' : 'View changelog',
+      onclick: () => toggleNotes(app)
+    });
+
+    const section = h('div', { class: 'section' }, [h('h2', { text: 'Release notes' }), toggle]);
+    if (!open) return section;
+
+    const loading = state.notesLoading[app.id];
+    const notes = state.notes[app.id];
+
+    if (loading) {
+      section.append(h('div', { class: 'notice', text: 'Loading release notes…' }));
+    } else if (!notes) {
+      section.append(h('div', { class: 'notice', text: 'No release notes available.' }));
+    } else if (notes.error) {
+      section.append(h('div', { class: 'error-box', text: notes.error }));
+    } else {
+      if (notes.updated) {
+        const when = new Date(notes.updated);
+        if (!Number.isNaN(when.getTime())) {
+          section.append(h('div', { class: 'muted', text: `Published ${when.toLocaleDateString()}` }));
+        }
+      }
+      const notesEl = h('div', { class: 'notes' }, [sanitizeHtml(notes.html)]);
+      notesEl.addEventListener('click', (event) => {
+        const anchor = event.target && event.target.closest ? event.target.closest('a') : null;
+        if (anchor && anchor.href) {
+          event.preventDefault();
+          window.api.openExternal(anchor.href);
+        }
+      });
+      section.append(notesEl);
+    }
+
+    if (result && result.htmlUrl) {
+      section.append(
+        h('a', {
+          class: 'link',
+          text: 'Full release notes on GitHub →',
+          href: result.htmlUrl,
+          onclick: (event) => {
+            event.preventDefault();
+            window.api.openExternal(result.htmlUrl);
+          }
+        })
+      );
+    }
+    return section;
+  }
+
+  function toggleNotes(app) {
+    state.notesOpen[app.id] = !state.notesOpen[app.id];
+    if (state.notesOpen[app.id] && !state.notes[app.id]) loadNotes(app.id);
+    else renderDetail();
+  }
+
+  async function loadNotes(appId) {
+    state.notesLoading[appId] = true;
+    renderDetail();
+    try {
+      state.notes[appId] = await window.api.releaseNotes(appId);
+    } catch (err) {
+      state.notes[appId] = { error: err && err.message ? err.message : String(err) };
+    } finally {
+      state.notesLoading[appId] = false;
+      if (state.selectedId === appId) renderDetail();
+    }
   }
 
   function renderDownloads(app, result) {
@@ -260,17 +456,20 @@
       h('div', { class: 'dl-list' }, rows),
       h('div', {
         class: 'notice',
-        text: 'Portable builds install automatically to a folder you choose. Installers (.msi/.dmg/.deb/.rpm/.flatpak) download, verify, then open with your system installer.'
+        text: 'Portable builds install automatically into their own subfolder inside a folder you choose, so several apps can share the same location. Installers (.msi/.dmg/.deb/.rpm/.flatpak) download, verify, then open with your system installer.'
       })
     ]);
   }
 
   function renderDownloadRow(app, asset, isPrimary) {
     const busy = Boolean(state.busy[app.id]);
-    const installed = state.results[app.id] && state.results[app.id].installedVersion === state.results[app.id].latestVersion;
+    const result = state.results[app.id];
+    // "Reinstall" only for the exact artifact that was installed, not every
+    // portable build for every platform/architecture.
+    const isInstalledAsset = Boolean(result && result.installedAssetName && asset.name === result.installedAssetName);
     let buttonLabel = 'Install';
     if (asset.kind === 'installer') buttonLabel = 'Download & open';
-    else if (installed) buttonLabel = 'Reinstall';
+    else if (isInstalledAsset) buttonLabel = 'Reinstall';
 
     const button = h('button', {
       class: `btn ${isPrimary ? 'primary' : ''}`.trim(),
@@ -366,7 +565,7 @@
 
       if (asset.kind === 'portable') {
         const result = state.results[app.id];
-        targetDir = (result && result.installDir) || null;
+        targetDir = (result && result.baseDir) || null;
         if (!targetDir) {
           targetDir = await window.api.pickDir(app.id);
           if (!targetDir) {
@@ -401,7 +600,10 @@
         const result = state.results[app.id];
         if (result) {
           result.installedVersion = download.version;
-          result.installDir = targetDir;
+          result.installedFormat = download.ext;
+          result.installedAssetName = asset.name;
+          result.baseDir = targetDir;
+          result.canOpen = true;
           result.status = 'current';
         }
       }
@@ -412,6 +614,10 @@
       if (result && info && info.version) {
         result.installedVersion = info.version;
         result.installDir = info.installDir || result.installDir;
+        result.baseDir = info.baseDir || result.baseDir;
+        result.installedFormat = info.format || result.installedFormat;
+        result.installedAssetName = info.assetName || result.installedAssetName;
+        result.canOpen = Boolean(info.installDir || info.launchPath || info.appPath);
         result.status = compareVersions(info.version, result.latestVersion) < 0 ? 'outdated' : 'current';
       }
     } catch (err) {
@@ -473,6 +679,9 @@
   // --- boot ----------------------------------------------------------------
 
   async function init() {
+    const brandIcon = document.getElementById('brand-icon');
+    if (brandIcon) brandIcon.addEventListener('error', () => brandIcon.remove());
+
     try {
       const info = await window.api.listApps();
       state.apps = info.apps;

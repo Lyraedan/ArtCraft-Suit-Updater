@@ -1,7 +1,7 @@
 {
   "name": "artcraft-suite-updater",
   "productName": "ArtCraft Suite Updater",
-  "version": "0.1.0",
+  "version": "0.1.8",
   "description": "Desktop downloader and updater for the ArtCraft Crafting Apps.",
   "license": "MIT",
   "author": "Lyraedan",
@@ -32,15 +32,23 @@
       "assets/**/*"
     ],
     "directories": {
-      "output": "dist"
+      "output": "build",
+      "buildResources": "build-resources"
     },
     "win": {
+      "icon": "assets/icon.ico",
       "target": [
         "portable",
         "nsis"
       ]
     },
+    "nsis": {
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico"
+    },
     "mac": {
+      "icon": "assets/icon.png",
       "target": [
         "dmg",
         "zip"
@@ -48,6 +56,7 @@
       "category": "public.app-category.utilities"
     },
     "linux": {
+      "icon": "assets/icon.png",
       "target": [
         "AppImage",
         "deb"

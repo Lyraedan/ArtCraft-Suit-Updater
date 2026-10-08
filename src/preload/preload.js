@@ -8,7 +8,10 @@ contextBridge.exposeInMainWorld('api', {
   download: (options) => ipcRenderer.invoke('download', options),
   install: (options) => ipcRenderer.invoke('install', options),
   pickDir: (appId) => ipcRenderer.invoke('pick-dir', { appId }),
+  openApp: (appId) => ipcRenderer.invoke('open-app', { appId }),
+  revealApp: (appId) => ipcRenderer.invoke('reveal-app', { appId }),
   getState: () => ipcRenderer.invoke('state:get'),
+  releaseNotes: (appId) => ipcRenderer.invoke('release-notes', { appId }),
   cancel: (appId) => ipcRenderer.invoke('download:cancel', { appId }),
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', { url }),
   onProgress: (callback) => {

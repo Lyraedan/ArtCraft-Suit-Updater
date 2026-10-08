@@ -50,9 +50,88 @@ async function extractArchive(archivePath, ext, targetDir) {
   throw new Error(`Unsupported archive type: ${ext}`);
 }
 
+// Recursively collects files and macOS .app bundles for launch detection.
+async function collectEntries(dir, depth, out) {
+  if (depth > 4) return;
+  let entries;
+  try {
+    entries = await fsp.readdir(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name.toLowerCase().endsWith('.app')) {
+        out.push({ path: full, bundle: true });
+        continue;
+      }
+      await collectEntries(full, depth + 1, out);
+    } else if (entry.isFile() || entry.isSymbolicLink()) {
+      const stat = await fsp.stat(full).catch(() => null);
+      out.push({
+        path: full,
+        name: entry.name,
+        size: stat ? stat.size : 0,
+        mode: stat ? stat.mode : 0,
+        inBin: /(^|[\\/])bin[\\/]/i.test(full)
+      });
+    }
+  }
+}
+
+// Chooses the GUI executable inside an extracted portable install, avoiding
+// the `*-cli` companion binaries that ship alongside it. On macOS it returns
+// the app bundle. Returns null when nothing suitable is found.
+function pickLaunchTarget(entries, appId, platform = process.platform) {
+  if (platform === 'darwin') {
+    const bundle = entries.find((entry) => entry.bundle);
+    if (bundle) return bundle.path;
+  }
+
+  const scored = entries
+    .filter((entry) => !entry.bundle)
+    .map((entry) => {
+      const name = entry.name.toLowerCase();
+      const stem = name.replace(/\.[^.]+$/, '');
+      let score = 0;
+
+      if (stem === appId) score += 100;
+      if (stem === `${appId}-cli` || /cli/.test(name)) score -= 1000;
+      if (name.startsWith(appId)) score += 30;
+      if (entry.inBin) score += 10;
+
+      if (platform === 'win32') {
+        if (!name.endsWith('.exe')) score -= 200;
+      } else if (entry.mode & 0o111) {
+        score += 20;
+      } else {
+        score -= 50;
+      }
+
+      score += Math.min((entry.size || 0) / 1e9, 1);
+      return { ...entry, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const best = scored[0];
+  if (!best || best.score < 0) return null;
+  return best.path;
+}
+
+async function findLaunchTarget(installPath, { appId, platform } = {}) {
+  const stat = await fsp.stat(installPath).catch(() => null);
+  if (!stat) return null;
+  if (stat.isFile()) return installPath; // e.g. an AppImage
+
+  const entries = [];
+  await collectEntries(installPath, 0, entries);
+  return pickLaunchTarget(entries, appId, platform);
+}
+
 // Auto-installs portable artifacts (.zip / .tar.gz / .AppImage) into targetDir.
 // Existing contents are swapped out atomically so updates replace cleanly.
-async function installPortable({ archivePath, ext, targetDir }) {
+async function installPortable({ archivePath, ext, targetDir, appId }) {
   if (!targetDir) throw new Error('No install folder was provided.');
   await fsp.mkdir(targetDir, { recursive: true });
 
@@ -60,7 +139,7 @@ async function installPortable({ archivePath, ext, targetDir }) {
     const dest = path.join(targetDir, path.basename(archivePath));
     await fsp.copyFile(archivePath, dest);
     await fsp.chmod(dest, 0o755);
-    return { appPath: dest, targetDir };
+    return { appPath: dest, targetDir, launchPath: dest };
   }
 
   const staging = `${targetDir}.new-${randomSuffix()}`;
@@ -71,7 +150,8 @@ async function installPortable({ archivePath, ext, targetDir }) {
     if (await exists(targetDir)) await fsp.rename(targetDir, backup);
     await fsp.rename(staging, targetDir);
     await fsp.rm(backup, { recursive: true, force: true }).catch(() => {});
-    return { appPath: targetDir, targetDir };
+    const launchPath = await findLaunchTarget(targetDir, { appId });
+    return { appPath: targetDir, targetDir, launchPath };
   } catch (err) {
     await fsp.rm(staging, { recursive: true, force: true }).catch(() => {});
     throw err;
@@ -86,4 +166,10 @@ async function openInstaller(archivePath) {
   return { opened: true };
 }
 
-module.exports = { installPortable, openInstaller, extractArchive };
+module.exports = {
+  installPortable,
+  openInstaller,
+  extractArchive,
+  findLaunchTarget,
+  pickLaunchTarget
+};
