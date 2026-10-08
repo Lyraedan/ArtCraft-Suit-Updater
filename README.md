@@ -4,6 +4,10 @@ A portable desktop downloader and updater for the [ArtCraft Crafting Apps](https
 
 It lists every Crafting App, shows which are installed and which have updates, and downloads/installs the correct build for your operating system and CPU.
 
+<img width="1919" height="1005" alt="image" src="https://github.com/user-attachments/assets/c21373c4-2817-4b40-9d01-fdcc7a90c0f9" />
+
+<img width="1917" height="1008" alt="image" src="https://github.com/user-attachments/assets/6a8f1263-7e06-41c3-aeb2-1e62e8901eac" />
+
 ## Apps managed
 
 PhotoCraft, VectorCraft, FilmCraft, LightCraft, PdfCraft, EffectCraft, DesignCraft, WordCraft, CADCraft, SoundCraft, GridCraft and DeckCraft.
