@@ -1,0 +1,76 @@
+name: Release portables
+
+# Builds a portable for each OS on its native runner and attaches the
+# artifacts to a GitHub Release. macOS and the Linux AppImage cannot be
+# cross-built, so this workflow is the supported way to produce all three.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: dist:win
+            folder: build/github/windows
+          - os: macos-latest
+            script: dist:mac
+            folder: build/github/mac
+          - os: ubuntu-latest
+            script: dist:linux
+            folder: build/github/linux
+    runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Ensure Electron binary
+        run: node -e "const fs=require('fs'); if(!fs.existsSync('node_modules/electron/dist')) require('child_process').execSync('node node_modules/electron/install.js',{stdio:'inherit'});"
+
+      - name: Build portable
+        run: npm run ${{ matrix.script }}
+
+      - name: Clean intermediate folders
+        shell: bash
+        run: rm -rf "${{ matrix.folder }}"/*-unpacked "${{ matrix.folder }}"/__* "${{ matrix.folder }}"/builder-debug.yml || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: portable-${{ matrix.os }}
+          path: ${{ matrix.folder }}/*
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: find artifacts -type f -print
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true

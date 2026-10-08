@@ -43,6 +43,23 @@ npm run build:linux   # Linux: AppImage + .deb
 
 Artifacts are written to `build/` (git-ignored).
 
+### Release portables
+
+To produce clean, release-ready portables in `build/github/<os>`:
+
+```bash
+npm run dist:win     # build/github/windows  -> portable .exe
+npm run dist:mac     # build/github/mac      -> .app zip
+npm run dist:linux   # build/github/linux    -> tar.gz + AppImage
+```
+
+Each command must run on its own operating system — the macOS `.zip` and the Linux `.AppImage` cannot be built on Windows (the AppImage step needs Linux symlinks/tooling). The bundled GitHub Actions workflow (`.github/workflows/release.yml`) builds all three on native runners and attaches them to a GitHub Release when you push a `v*` tag:
+
+```bash
+git tag v0.1.8
+git push origin v0.1.8
+```
+
 ## Testing and linting
 
 ```bash
