@@ -109,6 +109,13 @@ To add or change an app, edit `src/main/apps.config.js`:
 ## Notes
 
 - System installers are installed by your OS; the updater only records the last version it handed off, so it cannot read the exact installed version for those.
+- .github/workflows/release.yml and package.json are used to create the builds for Releases
+
+## Contributing
+Contributions are welcome, fork the project, do what you want to do and open a PR.
+
+## AI Notice
+AI was used to assist in the creation of this application.
 
 ## License
 
