@@ -4,9 +4,8 @@ A portable desktop downloader and updater for the [ArtCraft Crafting Apps](https
 
 It lists every Crafting App, shows which are installed and which have updates, and downloads/installs the correct build for your operating system and CPU.
 
-<img width="1919" height="1005" alt="image" src="https://github.com/user-attachments/assets/c21373c4-2817-4b40-9d01-fdcc7a90c0f9" />
-
-<img width="1917" height="1008" alt="image" src="https://github.com/user-attachments/assets/6a8f1263-7e06-41c3-aeb2-1e62e8901eac" />
+<img width="1919" height="1005" alt="image" src="https://github.com/user-attachments/assets/3d3c9456-5ee3-454d-8fc6-ad7bcc99c3e4" />
+<img width="1917" height="1008" alt="image" src="https://github.com/user-attachments/assets/aea83f78-04a2-4185-af5f-49f951173b51" />
 
 ## Apps managed
 
