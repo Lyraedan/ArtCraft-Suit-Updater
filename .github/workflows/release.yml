@@ -47,14 +47,13 @@ jobs:
       - name: Build portable
         run: npm run ${{ matrix.script }}
 
-      - name: Clean intermediate folders
-        shell: bash
-        run: rm -rf "${{ matrix.folder }}"/*-unpacked "${{ matrix.folder }}"/__* "${{ matrix.folder }}"/builder-debug.yml || true
-
       - uses: actions/upload-artifact@v4
         with:
           name: portable-${{ matrix.os }}
-          path: ${{ matrix.folder }}/*
+          path: |
+            ${{ matrix.folder }}/*.zip
+            ${{ matrix.folder }}/*.tar.gz
+            ${{ matrix.folder }}/*.AppImage
           if-no-files-found: error
 
   release:

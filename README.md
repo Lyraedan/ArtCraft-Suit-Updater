@@ -52,7 +52,7 @@ Artifacts are written to `build/` (git-ignored).
 To produce clean, release-ready portables in `build/github/<os>`:
 
 ```bash
-npm run dist:win     # build/github/windows  -> portable .exe
+npm run dist:win     # build/github/windows  -> portable .zip
 npm run dist:mac     # build/github/mac      -> .app zip
 npm run dist:linux   # build/github/linux    -> tar.gz + AppImage
 ```

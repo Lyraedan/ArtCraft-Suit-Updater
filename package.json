@@ -1,7 +1,7 @@
 {
   "name": "artcraft-suite-updater",
   "productName": "ArtCraft Suite Updater",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "Desktop downloader and updater for the ArtCraft Crafting Apps.",
   "license": "MIT",
   "author": "Lyraedan",
@@ -14,7 +14,7 @@
     "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux",
-    "dist:win": "electron-builder --win portable --publish never --config.directories.output=build/github/windows",
+    "dist:win": "electron-builder --win zip --publish never --config.directories.output=build/github/windows",
     "dist:mac": "electron-builder --mac zip --universal --publish never --config.directories.output=build/github/mac",
     "dist:linux": "electron-builder --linux tar.gz AppImage --publish never --config.directories.output=build/github/linux"
   },
