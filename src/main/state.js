@@ -3,11 +3,21 @@
 const fsp = require('fs/promises');
 const path = require('path');
 
+// User preferences. Kept here so they live in the same JSON file as the
+// installed-app records.
+const DEFAULT_SETTINGS = {
+  checkOnStart: true,
+  theme: 'dark',
+  autoScan: true,
+  confirmUninstall: true,
+  portableDir: ''
+};
+
 // Tiny JSON-backed store for installed versions, chosen folders, etc.
 // Kept independent of Electron so it can be unit tested with a temp dir.
 function createStore(baseDir) {
   const file = path.join(baseDir, 'state.json');
-  let data = { apps: {} };
+  let data = { apps: {}, settings: {} };
   let loaded = false;
   let writeQueue = Promise.resolve();
 
@@ -16,10 +26,11 @@ function createStore(baseDir) {
     try {
       const raw = await fsp.readFile(file, 'utf8');
       const parsed = JSON.parse(raw);
-      data = parsed && typeof parsed === 'object' ? parsed : { apps: {} };
+      data = parsed && typeof parsed === 'object' ? parsed : { apps: {}, settings: {} };
       if (!data.apps) data.apps = {};
+      if (!data.settings || typeof data.settings !== 'object') data.settings = {};
     } catch {
-      data = { apps: {} };
+      data = { apps: {}, settings: {} };
     }
     loaded = true;
     return data;
@@ -50,7 +61,25 @@ function createStore(baseDir) {
     return data.apps;
   }
 
-  return { load, save, get, set, getAll, file };
+  async function remove(appId) {
+    await load();
+    delete data.apps[appId];
+    await save();
+  }
+
+  async function getSettings() {
+    await load();
+    return { ...DEFAULT_SETTINGS, ...data.settings };
+  }
+
+  async function setSettings(patch) {
+    await load();
+    data.settings = { ...data.settings, ...(patch || {}) };
+    await save();
+    return { ...DEFAULT_SETTINGS, ...data.settings };
+  }
+
+  return { load, save, get, set, getAll, remove, getSettings, setSettings, file };
 }
 
-module.exports = { createStore };
+module.exports = { createStore, DEFAULT_SETTINGS };

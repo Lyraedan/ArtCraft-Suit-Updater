@@ -1,7 +1,7 @@
 {
   "name": "artcraft-suite-updater",
   "productName": "ArtCraft Suite Updater",
-  "version": "0.1.11",
+  "version": "0.2.0",
   "description": "Desktop downloader and updater for the ArtCraft Crafting Apps.",
   "license": "MIT",
   "author": "Lyraedan",

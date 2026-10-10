@@ -38,7 +38,9 @@ export default [
         console: 'readonly',
         fetch: 'readonly',
         setTimeout: 'readonly',
-        clearTimeout: 'readonly'
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly'
       }
     },
     rules: {

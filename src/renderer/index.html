@@ -19,17 +19,30 @@
               ><img id="brand-icon" src="../../assets/icon.png" alt="ArtCraft"
             /></span>
             <span class="brand-text">ArtCraft<small>Suite Updater</small></span>
+            <button id="settings-btn" class="icon-btn" type="button" title="Settings" aria-label="Settings">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Zm7.4-2.6.1-.9-.1-.9 1.9-1.5-1.9-3.3-2.3.8a7.6 7.6 0 0 0-1.5-.9l-.4-2.4H10.8l-.4 2.4c-.5.2-1 .5-1.5.9l-2.3-.8L4.7 9.6l1.9 1.5-.1.9.1.9-1.9 1.5 1.9 3.3 2.3-.8c.5.4 1 .7 1.5.9l.4 2.4h2.4l.4-2.4c.5-.2 1-.5 1.5-.9l2.3.8 1.9-3.3-1.9-1.5Z"
+                />
+              </svg>
+            </button>
           </div>
           <button id="check-all" class="btn primary block" type="button">Check for updates</button>
           <div id="checked-label" class="muted"></div>
         </header>
         <ul id="app-list" class="app-list"></ul>
-        <footer class="side-foot muted">Updates provided by official GitHub repos</footer>
+        <footer class="side-foot muted">
+          <div id="app-version" class="version-tag"></div>
+          <div>Updates provided by official GitHub repos</div>
+        </footer>
       </aside>
       <main id="detail">
         <div class="empty">Loading…</div>
       </main>
     </div>
+    <div id="settings-root"></div>
+    <div id="progress-dock" class="progress-dock"></div>
     <script src="renderer.js"></script>
   </body>
 </html>

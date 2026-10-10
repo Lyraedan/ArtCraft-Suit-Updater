@@ -2,7 +2,10 @@
 
 const fsp = require('fs/promises');
 const path = require('path');
+const os = require('os');
 const crypto = require('crypto');
+const { constants } = require('fs');
+const { spawn } = require('child_process');
 
 let extractZip = null;
 let tar = null;
@@ -166,10 +169,74 @@ async function openInstaller(archivePath) {
   return { opened: true };
 }
 
+// Flatpak apps are launched through the flatpak CLI rather than shell.openPath.
+async function openFlatpak(appId) {
+  await new Promise((resolve, reject) => {
+    const child = spawn('flatpak', ['run', appId], { detached: true, stdio: 'ignore' });
+    child.once('error', reject);
+    child.once('spawn', () => {
+      child.unref();
+      resolve();
+    });
+  });
+  return { opened: true };
+}
+
+// Validates a folder the user chose or typed for portable installs. The path
+// must be absolute (a leading ~ is expanded); a path that does not exist yet is
+// allowed (the installer creates it) as long as its nearest existing parent is
+// a writable directory.
+async function checkDirectory(dir) {
+  let value = String(dir || '').trim();
+  if (!value) return { valid: false, reason: 'empty' };
+  if (value === '~' || value.startsWith('~/') || value.startsWith('~\\')) {
+    value = path.join(os.homedir(), value.slice(1));
+  }
+  if (!path.isAbsolute(value)) return { valid: false, reason: 'not-absolute' };
+
+  const target = path.resolve(value);
+  let stat = null;
+  try {
+    stat = await fsp.stat(target);
+  } catch (err) {
+    if (err.code !== 'ENOENT') return { valid: false, reason: 'unreadable' };
+  }
+
+  if (stat) {
+    if (!stat.isDirectory()) return { valid: false, reason: 'not-directory' };
+    try {
+      await fsp.access(target, constants.W_OK);
+      return { valid: true, exists: true };
+    } catch {
+      return { valid: false, reason: 'not-writable' };
+    }
+  }
+
+  // Doesn't exist yet: walk up to the nearest existing ancestor.
+  let ancestor = path.dirname(target);
+  while (ancestor && ancestor !== path.dirname(ancestor)) {
+    try {
+      const ancestorStat = await fsp.stat(ancestor);
+      if (!ancestorStat.isDirectory()) return { valid: false, reason: 'not-directory' };
+      try {
+        await fsp.access(ancestor, constants.W_OK);
+        return { valid: true, exists: false };
+      } catch {
+        return { valid: false, reason: 'not-writable' };
+      }
+    } catch {
+      ancestor = path.dirname(ancestor);
+    }
+  }
+  return { valid: false, reason: 'unreadable' };
+}
+
 module.exports = {
   installPortable,
   openInstaller,
+  openFlatpak,
   extractArchive,
   findLaunchTarget,
-  pickLaunchTarget
+  pickLaunchTarget,
+  checkDirectory
 };

@@ -15,10 +15,14 @@ PhotoCraft, VectorCraft, FilmCraft, LightCraft, PdfCraft, EffectCraft, DesignCra
 
 - **All 12 apps in one window** with per-app status (`Up to date`, `Update vX → vY`, `Not installed`).
 - **Platform dropdown** (Windows / macOS / Linux) mirroring the layout of the official site, with the recommended download first and every other format listed below.
-- **Auto-checks for updates on launch** and on demand.
+- **Auto-checks for updates on launch** and on demand, and quietly re-scans local installs every few seconds so apps installed or removed outside the updater are picked up without a manual refresh.
 - **SHA-256 verification** of every download against the release's `SHA256SUMS.txt`.
 - **Portable installs** (`.zip`, `.tar.gz`, `.AppImage`) install automatically into `<chosen folder>/<App Name>/`
 - **System installers** (`.msi`, `.dmg`, `.deb`, `.rpm`, `.flatpak`) are downloaded, verified, then opened with your OS installer.
+- **Detects system installs** already on your machine (Windows registry, macOS `.app` bundles, and Linux package managers including `pacman`/AUR, `dpkg`, `rpm` and Flatpak) and reports their real installed version.
+- **Uninstall** both kinds of install: portable installs are deleted from disk, system installs are removed through the OS uninstaller or package manager (with an administrator prompt where needed).
+- **Right-click context menu** on any app in the list for quick actions: Check for update, Install, Open, Show in folder, Reinstall, Uninstall and View changelog.
+- **Settings panel** (gear icon): check for updates on start, Dark/Light theme (dark by default), automatic install scanning, uninstall confirmation, and a global portable install folder (you're asked for one the first time if it's unset).
 - **Open / Reinstall / Show in folder** for installed portable apps, launching the real GUI binary (never the bundled CLI).
 - **In-app changelog** — view the latest release notes for any app without leaving the tool.
 - Fully offline UI: all icons are bundled.
@@ -77,6 +81,7 @@ npm run lint
 3. Downloads are streamed with progress and hashed; the SHA-256 is checked against `SHA256SUMS.txt` before anything is installed.
 4. Portable archives are extracted and atomically swapped into place. System installers are handed to the OS default handler.
 5. Installed versions, install folders and launch targets are recorded in a small JSON state file in the app's user-data directory.
+6. System installs are detected from the host OS on every check: the Windows uninstall registry, macOS `.app` bundles in `/Applications`, and the Linux package databases (`pacman`, `dpkg`, `rpm`) plus Flatpak. Detected installs show their real version, status and can be opened. On Arch and other AUR installs the package manager owns updates, so the updater detects and opens the app but does not reinstall it.
 
 ## Project structure
 
@@ -108,7 +113,10 @@ To add or change an app, edit `src/main/apps.config.js`:
 
 ## Notes
 
-- System installers are installed by your OS; the updater only records the last version it handed off, so it cannot read the exact installed version for those.
+- The updater can only detect system installs on the machine it runs on; the platform dropdown only changes which downloads are shown.
+- When a system install can't be detected (for example a `.dmg` the user hasn't dragged to `/Applications`, or an unusual install location), the updater falls back to the last version it handed to the OS installer and labels it "Installer handed off".
+- Flatpak apps are opened through `flatpak run`; Arch/AUR (`pacman`) installs are detected and opened but updates stay with the package manager.
+- Uninstalling a system install runs the OS uninstaller (`msiexec` on Windows), moves the `.app` to the Trash on macOS, or invokes the package manager (`apt`/`dpkg`, `dnf`/`zypper`/`rpm`, `pacman`, `flatpak`) on Linux. Linux and per-machine Windows uninstalls need administrator permission, so a system prompt appears.
 - .github/workflows/release.yml and package.json are used to create the builds for Releases
 
 ## Contributing
